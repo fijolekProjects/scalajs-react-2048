@@ -1,6 +1,6 @@
 package webapp
 
-import game2048.Board
+import game2048.{Fields, Board}
 import game2048.Board.Directions
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -15,7 +15,7 @@ import scala.scalajs.js.annotation.JSExport
 object GameWebapp extends JSApp {
   type Score = Int
 
-  case class BoardScalaBackend($: BackendScope[Unit, (Score, Board, (Int, Int))]) {
+  case class BoardScalaBackend($: BackendScope[Unit, (Score, Board)]) {
     def moveRowKeyEventHandler = Callback {
       dom.window.onkeydown = (e: KeyboardEvent) => onKeyDownHandler(e).runNow()
     }
@@ -23,10 +23,10 @@ object GameWebapp extends JSApp {
     private def onKeyDownHandler(e: KeyboardEvent) = {
       val direction = readDirection(e)
       direction.map { dir =>
-        $.modState { case (score, board, _) =>
+        $.modState { case (score, board) =>
           val (additionalScore, newBoard) = board.move(dir)
-          val (newFieldIndex, boardWithNewField) = newBoard.nextBoard.run.unsafePerformIO()
-          (score + additionalScore, boardWithNewField, newFieldIndex)
+          val boardWithNewField = newBoard.nextBoard.run.unsafePerformIO()
+          (score + additionalScore, boardWithNewField)
         }
       }.getOrElse(Callback.empty)
     }
@@ -39,23 +39,20 @@ object GameWebapp extends JSApp {
       case _                            => None
     }
 
-    def render(scoreBoard: (Score, Board, (Int, Int))) = {
-      val (score, board, newFieldIndex) = scoreBoard
+    def render(scoreBoard: (Score, Board)) = {
+      val (score, board) = scoreBoard
       val boardTemplate = board.rows.zipWithIndex.map { case (row, rowIndex) =>
         val rowTemplate = row.fields.zipWithIndex.map { case (field, colIndex) =>
-          val baseFieldParams = List(^.className := s"field field-$field", ^.key := colIndex)
-          if (field != 0 && (rowIndex, colIndex) == newFieldIndex) {
-            <.div(baseFieldParams, field, ^.className := "new")
-          } else if (field != 0) {
-            <.div(baseFieldParams, field)
-          }
-          else {
-            <.div(baseFieldParams)
+          val baseFieldParams = List(^.className := s"field field-${field.value}", ^.key := colIndex)
+          field match {
+            case f: Fields.NonEmptyField if f.isNew => <.div(baseFieldParams, field.value, ^.className := "new")
+            case f: Fields.NonEmptyField if f.isMerged => <.div(baseFieldParams, field.value, ^.className := "merged")
+            case f: Fields.NonEmptyField            => <.div(baseFieldParams, field.value)
+            case Fields.EmptyField                  => <.div(baseFieldParams)
           }
         }
         <.span(rowTemplate)
       }
-
       <.div(
         <.p(^.className := "score", s"SCORE: $score"),
         <.div(^.className := "board", boardTemplate)
@@ -64,10 +61,7 @@ object GameWebapp extends JSApp {
   }
 
   val BoardScala = ReactComponentB[Unit]("BoardScala")
-    .initialState( {
-      val (newFieldIndex, board) = Board.zero.nextBoard.run.unsafePerformIO()
-      (0, board, newFieldIndex)
-    })
+    .initialState((0, Board.zero.nextBoard.run.unsafePerformIO().nextBoard.run.unsafePerformIO()))
     .renderBackend[BoardScalaBackend]
     .componentDidMount(_.backend.moveRowKeyEventHandler)
     .buildU

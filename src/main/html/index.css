@@ -49,9 +49,8 @@ body {
     background-color: blue;
 }
 
-.box.moving {
-    -webkit-transform: translateY(300px);
-    -webkit-border-radius: 3px;
+.moving {
+    -webkit-transform: translateX(350px);
     -webkit-transition: 170ms ease-in-out;
     -webkit-transition-property: -webkit-transform;
 }
@@ -67,6 +66,18 @@ body {
     -webkit-animation-fill-mode: forwards;
     -webkit-animation-delay: 0.15s;
     -webkit-transform: scale(0);
+}
+
+@keyframes pop {
+    0% { -webkit-transform: scale(0); }
+    50% { -webkit-transform: scale(1.2); }
+    100% { -webkit-transform: scale(1); }
+}
+
+.merged {
+    z-index: 20;
+    -webkit-animation: pop 200ms ease 100ms;
+    -webkit-animation-fill-mode: backwards;
 }
 
 .field-2 { background: #eee4da; box-shadow: 0 0 30px 10px rgba(243, 215, 116, 0), inset 0 0 0 1px rgba(255, 255, 255, 0); }

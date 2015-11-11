@@ -1,15 +1,18 @@
 package game2048
 
 import com.nicta.rng.Rng
-import game2048.Board.{Direction, Directions}
-import game2048.Row.{AdditionalScore, FieldValue, Index}
+import game2048.Board.{Index, AdditionalScore}
+import game2048.Fields.{EmptyField, NonEmptyField}
 
 import scalaz.NonEmptyList
 
 object Board {
+  type Index = Int
+  type AdditionalScore = Int
+
   private val rows = 4
   private val cols = 4
-  val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(0))))
+  val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(EmptyField))))
 
   sealed trait Direction
   object Directions {
@@ -22,15 +25,15 @@ object Board {
 }
 
 case class Board(rows: List[Row]) {
-  import Row._
+  import Board._
 
-  def nextBoard: Rng[((Index, Index), Board)] = {
+  def nextBoard: Rng[Board] = {
     val newFieldValue = Rng.chooseint(0, 10).map { n => if (n > 2) 2 else 4 }
     for {
       rc <- emptyFieldIndices
       (r, c) = rc
       newField <- newFieldValue
-    } yield (rc, updateAt(r, c)(newField))
+    } yield updateAt(r, c)(NonEmptyField(newField)(isNew = true))
   }
 
   def move(d: Direction): (AdditionalScore, Board) = d match {
@@ -52,7 +55,7 @@ case class Board(rows: List[Row]) {
   private def allEmptyIndices: List[(Index, Index)] = for {
     (r, rowIndex) <- rows.zipWithIndex
     (f, columnIndex) <- r.fields.zipWithIndex
-    if f.isEmpty
+    if f == EmptyField
   } yield (rowIndex, columnIndex)
 
   private def moveLeft: (AdditionalScore, Board) = rowsToBoard(rows.map(_.shiftLeft))
@@ -67,7 +70,7 @@ case class Board(rows: List[Row]) {
     (newScore, rightTransposed.transpose)
   }
 
-  private def rowsToBoard(shiftedRows: List[(Row.AdditionalScore, Row)]): (AdditionalScore, Board) = {
+  private def rowsToBoard(shiftedRows: List[(AdditionalScore, Row)]): (AdditionalScore, Board) = {
     val (score, movedRows) = shiftedRows.unzip
     (score.sum, Board(movedRows))
   }
@@ -79,21 +82,28 @@ case class Board(rows: List[Row]) {
   }
 }
 
-object Row {
-  type Field = Int
-  type Index = Int
-  type FieldValue = Int
-  type AdditionalScore = Int
+sealed trait Field {
+  def value: Int
+  def isNew: Boolean
+  def asOld: Field = this match {
+    case NonEmptyField(v) => NonEmptyField(v)(isNew = false)
+    case EmptyField => EmptyField
+  }
+  def isMerged: Boolean
+}
 
-  implicit class RichField(i: Field) {
-    def isEmpty: Boolean = i == 0
+object Fields {
+  case class NonEmptyField(override val value: Int)(override val isNew: Boolean = false, override val isMerged: Boolean = false) extends Field
+  case object EmptyField extends Field {
+    override def value: Int = 0
+    override def isNew: Boolean = false
+    override def isMerged: Boolean = false
   }
 }
 
-case class Row(fields: List[Row.Field]) {
+case class Row(fields: List[Field]) {
 
   private val fieldsCount = fields.size
-  private val emptyField = 0
 
   def shiftLeft: (AdditionalScore, Row) = {
     val (firstScore, firstRow) = this.slideLeft.mergeAt(0)
@@ -108,12 +118,12 @@ case class Row(fields: List[Row.Field]) {
   }
 
   private def slideLeft: Row = {
-    val nonEmptyFields = fields.filterNot(_ == emptyField)
+    val nonEmptyFields = fields.filterNot(_ == EmptyField)
     Row(complementWithEmptyFields(nonEmptyFields))
   }
 
-  private def complementWithEmptyFields(nonEmptyFields: List[Int]): List[Int] = {
-    nonEmptyFields ++ List.fill(fieldsCount - nonEmptyFields.size)(emptyField)
+  private def complementWithEmptyFields(nonEmptyFields: List[Field]): List[Field] = {
+    nonEmptyFields ++ List.fill(fieldsCount - nonEmptyFields.size)(EmptyField)
   }
 
   private def reverse = this.copy(fields = this.fields.reverse)
@@ -123,9 +133,12 @@ case class Row(fields: List[Row.Field]) {
     (newScore, Row(fields.take(i) ++ neighbours.toList ++ fields.drop(i + 2)))
   }
 
-  private def merge(previousField: Int, currentField: Int): (AdditionalScore, (FieldValue, FieldValue)) = {
-    if (previousField == currentField) (2 * currentField, (2 * currentField, emptyField))
-    else (0, (previousField, currentField))
+  private def merge(previousField: Field, currentField: Field): (AdditionalScore, (Field, Field)) = {
+    val twiceCurrentField = 2 * currentField.value
+    (previousField, currentField) match {
+      case (a: NonEmptyField, b: NonEmptyField) if a == b => (twiceCurrentField, (NonEmptyField(twiceCurrentField)(isMerged = true), EmptyField))
+      case _                                              => (0,                 (previousField.asOld, currentField.asOld))
+    }
   }
 
   implicit class RichTuple[A](t: (A, A)) {
