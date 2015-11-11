@@ -6,11 +6,11 @@ import org.scalatest.{FlatSpec, Matchers}
 
 class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
 
-  implicit def intToField(i: Int): Field = {
-    if (i == 0) Fields.EmptyField
-    else Fields.NonEmptyField(i)()
+  implicit def intToField(i: Int): Tile = {
+    if (i == 0) Tiles.EmptyTile
+    else Tiles.NonEmptyTile(i)()
   }
-  def newField(i: Int): Field = Fields.NonEmptyField(i)(isNew = true)
+  def newField(i: Int): Tile = Tiles.NonEmptyTile(i)(isNew = true)
 
   it should "move board in different directions" in {
     val rowsBeforeMove = List(

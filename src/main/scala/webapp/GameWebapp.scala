@@ -1,6 +1,6 @@
 package webapp
 
-import game2048.{Fields, Board}
+import game2048.{Tiles, Board}
 import game2048.Board.Directions
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -25,8 +25,8 @@ object GameWebapp extends JSApp {
       direction.map { dir =>
         $.modState { case (score, board) =>
           val (additionalScore, newBoard) = board.move(dir)
-          val boardWithNewField = newBoard.nextBoard.run.unsafePerformIO()
-          (score + additionalScore, boardWithNewField)
+          val boardWithNewTile = newBoard.nextBoard.run.unsafePerformIO()
+          (score + additionalScore, boardWithNewTile)
         }
       }.getOrElse(Callback.empty)
     }
@@ -42,13 +42,13 @@ object GameWebapp extends JSApp {
     def render(scoreBoard: (Score, Board)) = {
       val (score, board) = scoreBoard
       val boardTemplate = board.rows.zipWithIndex.map { case (row, rowIndex) =>
-        val rowTemplate = row.fields.zipWithIndex.map { case (field, colIndex) =>
-          val baseFieldParams = List(^.className := s"field field-${field.value}", ^.key := colIndex)
-          field match {
-            case f: Fields.NonEmptyField if f.isNew => <.div(baseFieldParams, field.value, ^.className := "new")
-            case f: Fields.NonEmptyField if f.isMerged => <.div(baseFieldParams, field.value, ^.className := "merged")
-            case f: Fields.NonEmptyField            => <.div(baseFieldParams, field.value)
-            case Fields.EmptyField                  => <.div(baseFieldParams)
+        val rowTemplate = row.tiles.zipWithIndex.map { case (tile, colIndex) =>
+          val baseTileParams = List(^.className := s"tile tile-${tile.value}", ^.key := colIndex)
+          tile match {
+            case f: Tiles.NonEmptyTile if f.isNew     => <.div(baseTileParams, tile.value, ^.className := "new")
+            case f: Tiles.NonEmptyTile if f.isMerged  => <.div(baseTileParams, tile.value, ^.className := "merged")
+            case f: Tiles.NonEmptyTile                => <.div(baseTileParams, tile.value)
+            case Tiles.EmptyTile                      => <.div(baseTileParams)
           }
         }
         <.span(rowTemplate)

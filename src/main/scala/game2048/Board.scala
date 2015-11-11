@@ -2,7 +2,7 @@ package game2048
 
 import com.nicta.rng.Rng
 import game2048.Board.{Index, AdditionalScore}
-import game2048.Fields.{EmptyField, NonEmptyField}
+import game2048.Tiles.{EmptyTile, NonEmptyTile}
 
 import scalaz.NonEmptyList
 
@@ -12,7 +12,7 @@ object Board {
 
   private val rows = 4
   private val cols = 4
-  val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(EmptyField))))
+  val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(EmptyTile))))
 
   sealed trait Direction
   object Directions {
@@ -28,12 +28,12 @@ case class Board(rows: List[Row]) {
   import Board._
 
   def nextBoard: Rng[Board] = {
-    val newFieldValue = Rng.chooseint(0, 10).map { n => if (n > 2) 2 else 4 }
+    val newTileValueRng = Rng.chooseint(0, 10).map { n => if (n > 2) 2 else 4 }
     for {
-      rc <- emptyFieldIndices
+      rc <- emptyTileIndices
       (r, c) = rc
-      newField <- newFieldValue
-    } yield updateAt(r, c)(NonEmptyField(newField)(isNew = true))
+      newTile <- newTileValueRng
+    } yield updateAt(r, c)(NonEmptyTile(newTile)(isNew = true))
   }
 
   def move(d: Direction): (AdditionalScore, Board) = d match {
@@ -44,7 +44,7 @@ case class Board(rows: List[Row]) {
     case Directions.None => (0, this)
   }
 
-  private def emptyFieldIndices: Rng[(Index, Index)] = {
+  private def emptyTileIndices: Rng[(Index, Index)] = {
     val nel = allEmptyIndices match {
       case h :: t => NonEmptyList.nel(h, t)
       case _ => throw new RuntimeException("you lost")
@@ -54,8 +54,8 @@ case class Board(rows: List[Row]) {
 
   private def allEmptyIndices: List[(Index, Index)] = for {
     (r, rowIndex) <- rows.zipWithIndex
-    (f, columnIndex) <- r.fields.zipWithIndex
-    if f == EmptyField
+    (f, columnIndex) <- r.tiles.zipWithIndex
+    if f == EmptyTile
   } yield (rowIndex, columnIndex)
 
   private def moveLeft: (AdditionalScore, Board) = rowsToBoard(rows.map(_.shiftLeft))
@@ -75,35 +75,35 @@ case class Board(rows: List[Row]) {
     (score.sum, Board(movedRows))
   }
 
-  private def transpose: Board = Board(rows.map(_.fields).transpose.map(Row.apply))
+  private def transpose: Board = Board(rows.map(_.tiles).transpose.map(Row.apply))
 
-  private def updateAt(row: Index, column: Index)(f: Field): Board = {
-    this.copy(rows = rows.updated(row, Row(rows(row).fields.updated(column, f))))
+  private def updateAt(row: Index, column: Index)(f: Tile): Board = {
+    this.copy(rows = rows.updated(row, Row(rows(row).tiles.updated(column, f))))
   }
 }
 
-sealed trait Field {
+sealed trait Tile {
   def value: Int
   def isNew: Boolean
-  def asOld: Field = this match {
-    case NonEmptyField(v) => NonEmptyField(v)(isNew = false)
-    case EmptyField => EmptyField
+  def asOld: Tile = this match {
+    case NonEmptyTile(v) => NonEmptyTile(v)(isNew = false)
+    case EmptyTile => EmptyTile
   }
   def isMerged: Boolean
 }
 
-object Fields {
-  case class NonEmptyField(override val value: Int)(override val isNew: Boolean = false, override val isMerged: Boolean = false) extends Field
-  case object EmptyField extends Field {
+object Tiles {
+  case class NonEmptyTile(override val value: Int)(override val isNew: Boolean = false, override val isMerged: Boolean = false) extends Tile
+  case object EmptyTile extends Tile {
     override def value: Int = 0
     override def isNew: Boolean = false
     override def isMerged: Boolean = false
   }
 }
 
-case class Row(fields: List[Field]) {
+case class Row(tiles: List[Tile]) {
 
-  private val fieldsCount = fields.size
+  private val tilesCount = tiles.size
 
   def shiftLeft: (AdditionalScore, Row) = {
     val (firstScore, firstRow) = this.slideLeft.mergeAt(0)
@@ -118,26 +118,26 @@ case class Row(fields: List[Field]) {
   }
 
   private def slideLeft: Row = {
-    val nonEmptyFields = fields.filterNot(_ == EmptyField)
-    Row(complementWithEmptyFields(nonEmptyFields))
+    val nonEmptyTiles = tiles.filterNot(_ == EmptyTile)
+    Row(complementWithEmptyTields(nonEmptyTiles))
   }
 
-  private def complementWithEmptyFields(nonEmptyFields: List[Field]): List[Field] = {
-    nonEmptyFields ++ List.fill(fieldsCount - nonEmptyFields.size)(EmptyField)
+  private def complementWithEmptyTields(nonEmptyTiles: List[Tile]): List[Tile] = {
+    nonEmptyTiles ++ List.fill(tilesCount - nonEmptyTiles.size)(EmptyTile)
   }
 
-  private def reverse = this.copy(fields = this.fields.reverse)
+  private def reverse = this.copy(tiles = this.tiles.reverse)
 
   private def mergeAt(i: Index): (AdditionalScore, Row) = {
-    val (newScore, neighbours) = merge(this.fields(i), this.fields(i + 1))
-    (newScore, Row(fields.take(i) ++ neighbours.toList ++ fields.drop(i + 2)))
+    val (newScore, neighbours) = merge(this.tiles(i), this.tiles(i + 1))
+    (newScore, Row(tiles.take(i) ++ neighbours.toList ++ tiles.drop(i + 2)))
   }
 
-  private def merge(previousField: Field, currentField: Field): (AdditionalScore, (Field, Field)) = {
-    val twiceCurrentField = 2 * currentField.value
-    (previousField, currentField) match {
-      case (a: NonEmptyField, b: NonEmptyField) if a == b => (twiceCurrentField, (NonEmptyField(twiceCurrentField)(isMerged = true), EmptyField))
-      case _                                              => (0,                 (previousField.asOld, currentField.asOld))
+  private def merge(tile: Tile, neighbour: Tile): (AdditionalScore, (Tile, Tile)) = {
+    val twiceTileValue = 2 * tile.value
+    (tile, neighbour) match {
+      case (a: NonEmptyTile, b: NonEmptyTile) if a == b => (twiceTileValue, (NonEmptyTile(twiceTileValue)(isMerged = true), EmptyTile))
+      case _                                            => (0,              (tile.asOld, neighbour.asOld))
     }
   }
 

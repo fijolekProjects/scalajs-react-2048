@@ -5,11 +5,11 @@ import org.scalatest.{Matchers, FlatSpec}
 
 class RowTest extends FlatSpec with Matchers with TableDrivenPropertyChecks {
 
-  def intToField(i: Int): Field = {
-    if (i == 0) Fields.EmptyField
-    else Fields.NonEmptyField(i)()
+  def intToField(i: Int): Tile = {
+    if (i == 0) Tiles.EmptyTile
+    else Tiles.NonEmptyTile(i)()
   }
-  implicit def listOfIntToListOfField(ints: List[Int]): List[Field] = {
+  implicit def listOfIntToListOfField(ints: List[Int]): List[Tile] = {
     ints.map(intToField)
   }
 
@@ -27,8 +27,8 @@ class RowTest extends FlatSpec with Matchers with TableDrivenPropertyChecks {
       (List(4, 0, 4, 2), List(0, 0, 8, 2), List(8, 2, 0, 0))
     )
     forAll(rows) { (beforeShift, expectedAfterRightShift, expectedAfterLeftShift) =>
-      Row(beforeShift).shiftRight._2.fields.map(_.value) shouldBe Row(expectedAfterRightShift).fields.map(_.value)
-      Row(beforeShift).shiftLeft._2.fields.map(_.value) shouldBe Row(expectedAfterLeftShift).fields.map(_.value)
+      Row(beforeShift).shiftRight._2.tiles.map(_.value) shouldBe Row(expectedAfterRightShift).tiles.map(_.value)
+      Row(beforeShift).shiftLeft._2.tiles.map(_.value) shouldBe Row(expectedAfterLeftShift).tiles.map(_.value)
     }
   }
 }
