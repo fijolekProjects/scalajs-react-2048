@@ -7,7 +7,7 @@ import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom
 import org.scalajs.dom.document
 import org.scalajs.dom.ext.KeyCode
-import org.scalajs.dom.raw.KeyboardEvent
+import org.scalajs.dom.raw.{NodeList, KeyboardEvent}
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -41,22 +41,42 @@ object GameWebapp extends JSApp {
 
     def render(scoreBoard: (Score, Board)) = {
       val (score, board) = scoreBoard
-      val boardTemplate = board.rows.zipWithIndex.map { case (row, rowIndex) =>
-        val rowTemplate = row.tiles.zipWithIndex.map { case (tile, colIndex) =>
-          val baseTileParams = List(^.className := s"tile tile-${tile.value}", ^.key := colIndex)
+      val boardTemplate = board.rows.zip(Stream.from(1)).flatMap { case (row, rowIndex) =>
+        val rowTemplate = row.tiles.zip(Stream.from(1)).flatMap { case (tile, colIndex) =>
+          val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-row-$rowIndex-col-$colIndex", ^.key := s"$rowIndex-$colIndex")
+          val tileInner = <.div(^.className := "tile-inner", tile.value)
           tile match {
-            case f: Tiles.NonEmptyTile if f.isNew     => <.div(baseTileParams, tile.value, ^.className := "new")
-            case f: Tiles.NonEmptyTile if f.isMerged  => <.div(baseTileParams, tile.value, ^.className := "merged")
-            case f: Tiles.NonEmptyTile                => <.div(baseTileParams, tile.value)
-            case Tiles.EmptyTile                      => <.div(baseTileParams)
+            case f: Tiles.NonEmptyTile if f.isNew     => Option(<.div(baseTileParams, ^.className := "new", tileInner))
+            case f: Tiles.NonEmptyTile if f.isMerged  => Option(<.div(baseTileParams, ^.className := "merged", tileInner))
+            case f: Tiles.NonEmptyTile                => Option(<.div(baseTileParams, tileInner))
+            case Tiles.EmptyTile                      => None
           }
         }
-        <.span(rowTemplate)
+        rowTemplate
       }
+      val gridContainer = (1 to 4).map { _ => <.span((1 to 4).map { _ => <.div(^.className := "grid-cell")}) }
+
       <.div(
         <.p(^.className := "score", s"SCORE: $score"),
-        <.div(^.className := "board", boardTemplate)
+        <.div(^.className := "board",
+          <.div(^.className := "grid-container", gridContainer),
+          <.div(^.className := "tile-container", boardTemplate)
+        )
       )
+    }
+
+    import org.scalajs.dom.ext._
+    def removeMergeAndNewClasses() = Callback {
+      org.scalajs.dom.setTimeout(() => {
+        val node = ReactDOM.findDOMNode($)
+        val nodeList = node.getElementsByClassName("merged") ++ node.getElementsByClassName("new")
+        val elements = nodeList.map(_.cast[dom.Element])
+        elements.foreach { e =>
+          e.classList.remove("merged")
+          e.classList.remove("new")
+        }
+      }, 250)
+
     }
   }
 
@@ -64,11 +84,12 @@ object GameWebapp extends JSApp {
     .initialState((0, Board.zero.nextBoard.run.unsafePerformIO().nextBoard.run.unsafePerformIO()))
     .renderBackend[BoardScalaBackend]
     .componentDidMount(_.backend.moveRowKeyEventHandler)
+    .componentDidUpdate { _.$.backend.removeMergeAndNewClasses()}
     .buildU
 
   @JSExport
   override def main(): Unit = {
-    ReactDOM.render(BoardScala(), document.getElementById("boardScala"))
+    ReactDOM.render(BoardScala(), document.getElementById("board-scala"))
   }
 
 }
