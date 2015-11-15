@@ -16,11 +16,11 @@ object GameWebapp extends JSApp {
   type Score = Int
 
   case class BoardScalaBackend($: BackendScope[Unit, (Score, Board)]) {
-    def moveRowKeyEventHandler = Callback {
+    def registerMoveRowByKeyEventHandler() = Callback {
       dom.window.onkeydown = (e: KeyboardEvent) => onKeyDownHandler(e).runNow()
     }
 
-    private def onKeyDownHandler(e: KeyboardEvent) = {
+    private def onKeyDownHandler(e: KeyboardEvent): Callback = {
       val direction = readDirection(e)
       direction.map { dir =>
         $.modState { case (score, board) =>
@@ -43,7 +43,7 @@ object GameWebapp extends JSApp {
       val (score, board) = scoreBoard
       val boardTemplate = board.rows.zip(Stream.from(1)).flatMap { case (row, rowIndex) =>
         val rowTemplate = row.tiles.zip(Stream.from(1)).flatMap { case (tile, colIndex) =>
-          val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-row-$rowIndex-col-$colIndex", ^.key := s"$rowIndex-$colIndex")
+          val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-row-$rowIndex-col-$colIndex", ^.key := s"${tile.id}")
           val tileInner = <.div(^.className := "tile-inner", tile.value)
           tile match {
             case f: Tiles.NonEmptyTile if f.isNew     => Option(<.div(baseTileParams, ^.className := "new", tileInner))
@@ -83,8 +83,8 @@ object GameWebapp extends JSApp {
   val BoardScala = ReactComponentB[Unit]("BoardScala")
     .initialState((0, Board.zero.nextBoard.run.unsafePerformIO().nextBoard.run.unsafePerformIO()))
     .renderBackend[BoardScalaBackend]
-    .componentDidMount(_.backend.moveRowKeyEventHandler)
-    .componentDidUpdate { _.$.backend.removeMergeAndNewClasses()}
+    .componentDidMount(_.backend.registerMoveRowByKeyEventHandler())
+    .componentDidUpdate(_.$.backend.removeMergeAndNewClasses())
     .buildU
 
   @JSExport

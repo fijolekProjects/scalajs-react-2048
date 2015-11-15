@@ -4,13 +4,14 @@ import game2048.Board.Directions
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
 
-class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
 
+class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
+  import scala.language.implicitConversions
   implicit def intToField(i: Int): Tile = {
     if (i == 0) Tiles.EmptyTile
     else Tiles.NonEmptyTile(i)()
   }
-  def newField(i: Int): Tile = Tiles.NonEmptyTile(i)(isNew = true)
+  def newField(i: Int): Tile = Tiles.NonEmptyTile(i)(isNew = true, id = 0)
 
   it should "move board in different directions" in {
     val rowsBeforeMove = List(

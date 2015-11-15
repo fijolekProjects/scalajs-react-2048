@@ -78,20 +78,18 @@ body {
     -webkit-transition-property: -webkit-transform;
 }
 
-@-webkit-keyframes newTile {
-    from { -webkit-transform: scale(0); }
-    to { -webkit-transform: scale(1); }
+@-webkit-keyframes appear {
+    0% { opacity: 0; -webkit-transform: scale(0); }
+    100% { opacity: 1; -webkit-transform: scale(1); }
 }
-
 .new .tile-inner {
-    -webkit-animation-duration: 0.2s;
-    -webkit-animation-name: newTile;
+    -webkit-animation: appear 200ms ease 100ms;
     -webkit-animation-fill-mode: forwards;
     -webkit-animation-delay: 0.15s;
     -webkit-transform: scale(0);
 }
 
-@keyframes pop {
+@-webkit-keyframes pop {
     0% { -webkit-transform: scale(0); }
     50% { -webkit-transform: scale(1.2); }
     100% { -webkit-transform: scale(1); }

@@ -4,10 +4,10 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{Matchers, FlatSpec}
 
 class RowTest extends FlatSpec with Matchers with TableDrivenPropertyChecks {
-
+  import scala.language.implicitConversions
   def intToField(i: Int): Tile = {
     if (i == 0) Tiles.EmptyTile
-    else Tiles.NonEmptyTile(i)()
+    else Tiles.NonEmptyTile(i)(id = 0)
   }
   implicit def listOfIntToListOfField(ints: List[Int]): List[Tile] = {
     ints.map(intToField)

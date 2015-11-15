@@ -33,7 +33,7 @@ case class Board(rows: List[Row]) {
       rc <- emptyTileIndices
       (r, c) = rc
       newTile <- newTileValueRng
-    } yield updateAt(r, c)(NonEmptyTile(newTile)(isNew = true))
+    } yield updateAt(r, c)(NonEmptyTile(newTile)(isNew = true, id = Tiles.incrCounter))
   }
 
   def move(d: Direction): (AdditionalScore, Board) = d match {
@@ -86,18 +86,26 @@ sealed trait Tile {
   def value: Int
   def isNew: Boolean
   def asOld: Tile = this match {
-    case NonEmptyTile(v) => NonEmptyTile(v)(isNew = false)
+    case tile: NonEmptyTile => NonEmptyTile(tile.value)(isNew = false, id=tile.id)
     case EmptyTile => EmptyTile
   }
   def isMerged: Boolean
+  def id: Int
 }
 
 object Tiles {
-  case class NonEmptyTile(override val value: Int)(override val isNew: Boolean = false, override val isMerged: Boolean = false) extends Tile
+  var counter = 0
+  def incrCounter = {
+    counter+=1
+    counter
+  }
+
+  case class NonEmptyTile(override val value: Int)(override val isNew: Boolean = false, override val isMerged: Boolean = false, override val id:Int) extends Tile
   case object EmptyTile extends Tile {
     override def value: Int = 0
     override def isNew: Boolean = false
     override def isMerged: Boolean = false
+    override def id: Int = -1
   }
 }
 
@@ -136,7 +144,7 @@ case class Row(tiles: List[Tile]) {
   private def merge(tile: Tile, neighbour: Tile): (AdditionalScore, (Tile, Tile)) = {
     val twiceTileValue = 2 * tile.value
     (tile, neighbour) match {
-      case (a: NonEmptyTile, b: NonEmptyTile) if a == b => (twiceTileValue, (NonEmptyTile(twiceTileValue)(isMerged = true), EmptyTile))
+      case (a: NonEmptyTile, b: NonEmptyTile) if a == b => (twiceTileValue, (NonEmptyTile(twiceTileValue)(isMerged = true, id = a.id), EmptyTile))
       case _                                            => (0,              (tile.asOld, neighbour.asOld))
     }
   }
