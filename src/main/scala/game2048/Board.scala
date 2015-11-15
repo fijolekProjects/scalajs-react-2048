@@ -10,9 +10,9 @@ object Board {
   type Index = Int
   type AdditionalScore = Int
 
-  private val rows = 4
-  private val cols = 4
-  val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(EmptyTile))))
+  val rows = 4
+  val cols = 4
+  private val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(EmptyTile))))
 
   sealed trait Direction
   object Directions {
@@ -22,6 +22,15 @@ object Board {
     case object Down extends Direction
     case object None extends Direction
   }
+
+  sealed trait GameStateAfterMove
+  object GameStatesAfterMove{
+    case class BoardChanged(additionalScore: AdditionalScore, board: Rng[Board]) extends GameStateAfterMove
+    case object NothingChanged extends GameStateAfterMove
+    /*fixme case object GameOver*/
+  }
+
+  def createBoardStartPosition: Rng[Board] = Board.zero.nextBoard.flatMap(_.nextBoard)
 }
 
 case class Board(rows: List[Row]) {
@@ -34,6 +43,12 @@ case class Board(rows: List[Row]) {
       (r, c) = rc
       newTile <- newTileValueRng
     } yield updateAt(r, c)(NonEmptyTile(newTile)(isNew = true, id = Tiles.incrAndGetCounter))
+  }
+
+  def moveAndCreateNewTile(d: Direction): GameStateAfterMove = {
+    val (additionalScore, boardAfterMove) = move(d)
+    if (boardAfterMove == this) GameStatesAfterMove.NothingChanged
+    else                        GameStatesAfterMove.BoardChanged(additionalScore, boardAfterMove.nextBoard)
   }
 
   def move(d: Direction): (AdditionalScore, Board) = d match {

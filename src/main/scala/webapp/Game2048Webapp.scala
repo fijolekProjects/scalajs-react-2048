@@ -1,13 +1,17 @@
 package webapp
 
-import game2048.{Tiles, Board}
-import game2048.Board.Directions
+import game2048.Board.GameStatesAfterMove._
+import game2048.Board.{Index, Direction, Directions}
+import game2048.Tiles.NonEmptyTile
+import game2048.{Board, Tile, Tiles}
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.prefix_<^
 import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom
-import org.scalajs.dom.document
-import org.scalajs.dom.ext.KeyCode
-import org.scalajs.dom.raw.{NodeList, KeyboardEvent}
+import org.scalajs.dom.ext.{KeyCode, _}
+import org.scalajs.dom.html.Div
+import org.scalajs.dom.raw.KeyboardEvent
+import org.scalajs.dom.{document, html}
 
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
@@ -16,18 +20,13 @@ object Game2048Webapp extends JSApp {
   type Score = Int
 
   case class BoardScalaBackend($: BackendScope[Unit, (Score, Board)]) {
-    def registerMoveRowByKeyEventHandler() = Callback {
+    def registerMoveBoardEventHandler() = Callback {
       dom.window.onkeydown = (e: KeyboardEvent) => onKeyDownHandler(e).runNow()
     }
 
     private def onKeyDownHandler(e: KeyboardEvent): Callback = {
-      val direction = readDirection(e)
-      direction.map { dir =>
-        $.modState { case (score, board) =>
-          val (additionalScore, newBoard) = board.move(dir)
-          val boardWithNewTile = newBoard.nextBoard.run.unsafePerformIO()
-          (score + additionalScore, boardWithNewTile)
-        }
+      readDirection(e).map { dir =>
+        $.modState { case (score, board) => moveBoard(dir, score, board) }
       }.getOrElse(Callback.empty)
     }
 
@@ -39,23 +38,15 @@ object Game2048Webapp extends JSApp {
       case _                            => None
     }
 
+    private def moveBoard(dir: Direction, score: Score, board: Board): (Score, Board) = board.moveAndCreateNewTile(dir) match {
+      case BoardChanged(additionalScore, changedBoard) => (score + additionalScore, changedBoard.run.unsafePerformIO())
+      case NothingChanged                              => (score + 0,               board)
+    }
+
+    val gridContainer = (1 to Board.rows).map { _ => <.span((1 to Board.cols).map { _ => <.div(^.className := "grid-cell")}) }
     def render(scoreBoard: (Score, Board)) = {
       val (score, board) = scoreBoard
-      val boardTemplate = board.rows.zip(Stream.from(1)).flatMap { case (row, rowIndex) =>
-        val rowTemplate = row.tiles.zip(Stream.from(1)).flatMap { case (tile, colIndex) =>
-          val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-row-$rowIndex-col-$colIndex", ^.key := s"${tile.id}")
-          val tileInner = <.div(^.className := "tile-inner", tile.value)
-          tile match {
-            case f: Tiles.NonEmptyTile if f.isNew     => Option(<.div(baseTileParams, ^.className := "new", tileInner))
-            case f: Tiles.NonEmptyTile if f.isMerged  => Option(<.div(baseTileParams, ^.className := "merged", tileInner))
-            case f: Tiles.NonEmptyTile                => Option(<.div(baseTileParams, tileInner))
-            case Tiles.EmptyTile                      => None
-          }
-        }
-        rowTemplate
-      }
-      val gridContainer = (1 to 4).map { _ => <.span((1 to 4).map { _ => <.div(^.className := "grid-cell")}) }
-
+      val boardTemplate = createBoardTemplate(board)
       <.div(
         <.p(^.className := "score", s"SCORE: $score"),
         <.div(^.className := "board",
@@ -65,7 +56,24 @@ object Game2048Webapp extends JSApp {
       )
     }
 
-    import org.scalajs.dom.ext._
+    private def createBoardTemplate(board: Board): List[ReactTagOf[dom.Element]] = {
+      for {
+        (row, rowIndex)   <- board.rows.zip(Stream.from(1))
+        (tile, colIndex)  <- row.tiles.zip(Stream.from(1))
+      } yield createTile(tile, rowIndex, colIndex)
+    }.flatten
+
+    private def createTile(tile: Tile, rowIndex: Index, colIndex: Index): Option[ReactTagOf[dom.Element]] = {
+      val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-row-$rowIndex-col-$colIndex", ^.key := s"${tile.id}")
+      val tileInner = <.div(^.className := "tile-inner", tile.value)
+      tile match {
+        case f: NonEmptyTile if f.isNew     => Option(<.div(baseTileParams, ^.className := "new", tileInner))
+        case f: NonEmptyTile if f.isMerged  => Option(<.div(baseTileParams, ^.className := "merged", tileInner))
+        case f: NonEmptyTile                => Option(<.div(baseTileParams, tileInner))
+        case Tiles.EmptyTile                => None
+      }
+    }
+
     def removeMergeAndNewClasses() = Callback {
       org.scalajs.dom.setTimeout(() => {
         val node = ReactDOM.findDOMNode($)
@@ -80,16 +88,16 @@ object Game2048Webapp extends JSApp {
     }
   }
 
-  val BoardScala = ReactComponentB[Unit]("BoardScala")
-    .initialState((0, Board.zero.nextBoard.run.unsafePerformIO().nextBoard.run.unsafePerformIO()))
+  val GameBoard = ReactComponentB[Unit]("GameBoard")
+    .initialState((0, Board.createBoardStartPosition.run.unsafePerformIO()))
     .renderBackend[BoardScalaBackend]
-    .componentDidMount(_.backend.registerMoveRowByKeyEventHandler())
+    .componentDidMount(_.backend.registerMoveBoardEventHandler())
     .componentDidUpdate(_.$.backend.removeMergeAndNewClasses())
     .buildU
 
   @JSExport
   override def main(): Unit = {
-    ReactDOM.render(BoardScala(), document.getElementById("board-scala"))
+    ReactDOM.render(GameBoard(), document.getElementById("game-board"))
   }
 
 }
