@@ -105,23 +105,23 @@ sealed trait Tile {
     case EmptyTile => EmptyTile
   }
   def isMerged: Boolean
-  def id: Int
+  def id: Long
 }
 
 object Tiles {
-  var counter = 0 /*shame on me*/
+  var counter: Long = 0 /*shame on me*/
   def incrAndGetCounter = {
     counter += 1 
     counter
   }
 
   case class NonEmptyTile(override val value: Int)
-                         (override val isNew: Boolean = false, override val isMerged: Boolean = false, override val id: Int) extends Tile
+                         (override val isNew: Boolean = false, override val isMerged: Boolean = false, override val id: Long) extends Tile
   case object EmptyTile extends Tile {
     override def value: Int = 0
     override def isNew: Boolean = false
     override def isMerged: Boolean = false
-    override def id: Int = -1
+    override def id: Long = -1
   }
 }
 

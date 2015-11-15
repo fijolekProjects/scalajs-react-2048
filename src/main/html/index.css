@@ -9,7 +9,7 @@ body {
     height: 500px;
 }
 
-.score {
+.score-container {
     display: inline-block;
     background: #bbada0;
     padding: 15px 25px;
@@ -19,6 +19,23 @@ body {
     border-radius: 3px;
     color: white;
     text-align: center;
+}
+
+@keyframes move-up {
+    0% { top: 25px; opacity: 1; }
+    100% { top: -50px; opacity: 0; }
+}
+
+.score-container .score-addition {
+    position: absolute;
+    margin-left: 100px;
+    font-size: 25px;
+    line-height: 25px;
+    font-weight: bold;
+    color: rgba(119, 110, 101, 0.9);
+    z-index: 100;
+    -webkit-animation: move-up 600ms ease-in;
+    -webkit-animation-fill-mode: both;
 }
 
 .board {
