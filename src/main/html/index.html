@@ -5,23 +5,17 @@
     <title>The Scala.js Tutorial</title>
 </head>
 <body>
-<!-- Include Scala.js compiled code -->
+<script type="text/javascript" src="./../../../target/scala-2.11/scala-2048-jsdeps.min.js"></script>
 <script type="text/javascript" src="./../../../target/scala-2.11/scala-2048-fastopt.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.1/react.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.1/react-dom.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.23/browser.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-<!--<script type="text/babel" src="./../js/BoardSample.js"></script>-->
 <link rel="stylesheet" type="text/css" href="index.css">
 <script type="text/javascript" src="/workbench.js"></script>
-<!-- Run tutorial.webapp.TutorialApp -->
 
 <div class="container">
     <span id="board-scala"></span>
 </div>
 
 <script type="text/javascript">
-    webapp.GameWebapp().main();
+    webapp. Game2048Webapp().main();
 </script>
 
 </body>

@@ -37,10 +37,10 @@ libraryDependencies += "com.github.japgolly.fork.nicta" %%% "rng" % "1.3.0"
 libraryDependencies += "com.github.japgolly.scalajs-react" % "core_sjs0.6_2.11" % "0.10.1"
 
 // React JS itself (Note the filenames, adjust as needed, eg. to remove addons.)
-jsDependencies += "org.webjars.npm" % "react"     % "0.14.1" / "react-with-addons.js" commonJSName "React"    minified "react-with-addons.min.js"
+jsDependencies += "org.webjars.npm" % "react"     % "0.14.2" / "react-with-addons.js" commonJSName "React"    minified "react-with-addons.min.js"
 
-jsDependencies += "org.webjars.npm" % "react-dom" % "0.14.1" / "react-dom.js"         commonJSName "ReactDOM" minified "react-dom.min.js" dependsOn "react-with-addons.js"
+jsDependencies += "org.webjars.npm" % "react-dom" % "0.14.2" / "react-dom.js"         commonJSName "ReactDOM" minified "react-dom.min.js" dependsOn "react-with-addons.js"
 
-bootSnippet := "webapp.GameWebapp().main();"
+bootSnippet := "webapp.Game2048Webapp().main();"
 
 refreshBrowsers <<= refreshBrowsers.triggeredBy(fastOptJS in Compile)

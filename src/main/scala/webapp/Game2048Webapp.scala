@@ -12,7 +12,7 @@ import org.scalajs.dom.raw.{NodeList, KeyboardEvent}
 import scala.scalajs.js.JSApp
 import scala.scalajs.js.annotation.JSExport
 
-object GameWebapp extends JSApp {
+object Game2048Webapp extends JSApp {
   type Score = Int
 
   case class BoardScalaBackend($: BackendScope[Unit, (Score, Board)]) {

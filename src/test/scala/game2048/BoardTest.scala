@@ -9,9 +9,8 @@ class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
   import scala.language.implicitConversions
   implicit def intToField(i: Int): Tile = {
     if (i == 0) Tiles.EmptyTile
-    else Tiles.NonEmptyTile(i)()
+    else Tiles.NonEmptyTile(i)(id = 0)
   }
-  def newField(i: Int): Tile = Tiles.NonEmptyTile(i)(isNew = true, id = 0)
 
   it should "move board in different directions" in {
     val rowsBeforeMove = List(
@@ -23,17 +22,17 @@ class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
     val rowsAfterLeftMove = List(
       Row(List(0, 0, 0, 0)),
       Row(List(2, 0, 0, 0)),
-      Row(List(newField(4), 0, 0, 0)),
-      Row(List(newField(4), newField(4), 0, 0))
+      Row(List(4, 0, 0, 0)),
+      Row(List(4, 4, 0, 0))
     )
     val rowsAfterRightMove = List(
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 2)),
-      Row(List(0, 0, 0, newField(4))),
-      Row(List(0, 0, newField(4), newField(4)))
+      Row(List(0, 0, 0, 4)),
+      Row(List(0, 0, 4, 4))
     )
     val rowsAfterUpMove = List(
-      Row(List(2, 2, newField(4), newField(4))),
+      Row(List(2, 2, 4, 4)),
       Row(List(0, 0, 2, 0)),
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 0))
@@ -42,7 +41,7 @@ class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 2, 0)),
-      Row(List(2, 2, newField(4), newField(4)))
+      Row(List(2, 2, 4, 4))
     )
 
     Board(rowsBeforeMove).move(Directions.Left)._2 shouldBe Board(rowsAfterLeftMove)
@@ -58,7 +57,7 @@ class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
     )
 
     val anoptherRowsAfterUpMove = List(
-      Row(List(0, 0, newField(4), 0)),
+      Row(List(0, 0, 4, 0)),
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 0))

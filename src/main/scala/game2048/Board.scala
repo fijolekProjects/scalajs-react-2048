@@ -33,7 +33,7 @@ case class Board(rows: List[Row]) {
       rc <- emptyTileIndices
       (r, c) = rc
       newTile <- newTileValueRng
-    } yield updateAt(r, c)(NonEmptyTile(newTile)(isNew = true, id = Tiles.incrCounter))
+    } yield updateAt(r, c)(NonEmptyTile(newTile)(isNew = true, id = Tiles.incrAndGetCounter))
   }
 
   def move(d: Direction): (AdditionalScore, Board) = d match {
@@ -94,13 +94,14 @@ sealed trait Tile {
 }
 
 object Tiles {
-  var counter = 0
-  def incrCounter = {
-    counter+=1
+  var counter = 0 /*shame on me*/
+  def incrAndGetCounter = {
+    counter += 1 
     counter
   }
 
-  case class NonEmptyTile(override val value: Int)(override val isNew: Boolean = false, override val isMerged: Boolean = false, override val id:Int) extends Tile
+  case class NonEmptyTile(override val value: Int)
+                         (override val isNew: Boolean = false, override val isMerged: Boolean = false, override val id: Int) extends Tile
   case object EmptyTile extends Tile {
     override def value: Int = 0
     override def isNew: Boolean = false
@@ -127,10 +128,10 @@ case class Row(tiles: List[Tile]) {
 
   private def slideLeft: Row = {
     val nonEmptyTiles = tiles.filterNot(_ == EmptyTile)
-    Row(complementWithEmptyTields(nonEmptyTiles))
+    Row(complementWithEmptyTiles(nonEmptyTiles))
   }
 
-  private def complementWithEmptyTields(nonEmptyTiles: List[Tile]): List[Tile] = {
+  private def complementWithEmptyTiles(nonEmptyTiles: List[Tile]): List[Tile] = {
     nonEmptyTiles ++ List.fill(tilesCount - nonEmptyTiles.size)(EmptyTile)
   }
 
