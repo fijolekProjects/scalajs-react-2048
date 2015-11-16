@@ -19,6 +19,7 @@ body {
     border-radius: 3px;
     color: white;
     text-align: center;
+    margin-bottom: 25px;
 }
 
 @keyframes move-up {

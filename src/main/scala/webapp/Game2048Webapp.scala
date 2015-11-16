@@ -112,7 +112,7 @@ object Game2048Webapp extends JSApp {
   val scoreBoard = ReactComponentB[Board.AdditionalScore]("Score")
     .initialState(0)
     .renderBackend[ScoreBackend]
-    .componentWillReceiveProps { self => self.$.backend.incrementScore(self.currentProps) }
+    .componentWillReceiveProps { self => self.$.backend.incrementScore(self.nextProps) }
     .build
 
   @JSExport
