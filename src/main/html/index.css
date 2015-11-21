@@ -22,7 +22,7 @@ body {
     margin-bottom: 25px;
 }
 
-@keyframes move-up {
+@-webkit-keyframes move-up {
     0% { top: 25px; opacity: 1; }
     100% { top: -50px; opacity: 0; }
 }
@@ -47,6 +47,53 @@ body {
     padding: 15px;
     border-radius: 6px;
     -webkit-box-sizing: border-box;
+}
+
+@-webkit-keyframes fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+.game-message {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(238, 228, 218, 0.73);
+    z-index: 100;
+    padding-top: 40px;
+    text-align: center;
+    -webkit-animation: fade-in 800ms ease 1200ms;
+    -webkit-animation-fill-mode: both;
+}
+
+.restart-button {
+    display: inline-block;
+    background: #8f7a66;
+    border-radius: 3px;
+    padding: 0 20px;
+    text-decoration: none;
+    color: #f9f6f2;
+    height: 40px;
+    line-height: 42px;
+    cursor: pointer;
+    text-align: center;
+    float: right;
+    margin-top: -70px;
+}
+
+.game-message.game-over {
+    display: block;
+}
+
+.game-message p {
+    font-size: 60px;
+    font-weight: bold;
+    height: 60px;
+    line-height: 60px;
+    margin-top: 20%;
 }
 
 .grid-container {
@@ -131,19 +178,19 @@ body {
 .tile-1024 .tile-inner { color: #f9f6f2; background: #edc53f; box-shadow: 0 0 30px 10px rgba(243, 215, 116, 0.47619), inset 0 0 0 1px rgba(255, 255, 255, 0.28571); font-size: 35px; }
 .tile-2048 .tile-inner { color: #f9f6f2; background: #edc22e; box-shadow: 0 0 30px 10px rgba(243, 215, 116, 0.55556), inset 0 0 0 1px rgba(255, 255, 255, 0.33333); font-size: 35px; }
 
-.tile.tile-position-row-1-col-1{ -webkit-transform: translate(0px, 0px); }
-.tile.tile-position-row-2-col-1{ -webkit-transform: translate(0px, 121px); }
-.tile.tile-position-row-3-col-1{ -webkit-transform: translate(0px, 242px);  }
-.tile.tile-position-row-4-col-1{ -webkit-transform: translate(0px, 363px); }
-.tile.tile-position-row-1-col-2{ -webkit-transform: translate(121px, 0px); }
-.tile.tile-position-row-2-col-2{ -webkit-transform: translate(121px, 121px); }
-.tile.tile-position-row-3-col-2{ -webkit-transform: translate(121px, 242px); }
-.tile.tile-position-row-4-col-2{ -webkit-transform: translate(121px, 363px); }
-.tile.tile-position-row-1-col-3{ -webkit-transform: translate(242px, 0px); }
-.tile.tile-position-row-2-col-3{ -webkit-transform: translate(242px, 121px); }
-.tile.tile-position-row-3-col-3{ -webkit-transform: translate(242px, 242px); }
-.tile.tile-position-row-4-col-3{ -webkit-transform: translate(242px, 363px); }
-.tile.tile-position-row-1-col-4{ -webkit-transform: translate(363px, 0px); }
-.tile.tile-position-row-2-col-4{ -webkit-transform: translate(363px, 121px); }
-.tile.tile-position-row-3-col-4{ -webkit-transform: translate(363px, 242px); }
-.tile.tile-position-row-4-col-4{ -webkit-transform: translate(363px, 363px); }
+.tile.tile-position-col-1-row-1{ -webkit-transform: translate(0px, 0px); }
+.tile.tile-position-col-1-row-2{ -webkit-transform: translate(0px, 121px); }
+.tile.tile-position-col-1-row-3{ -webkit-transform: translate(0px, 242px);  }
+.tile.tile-position-col-1-row-4{ -webkit-transform: translate(0px, 363px); }
+.tile.tile-position-col-2-row-1{ -webkit-transform: translate(121px, 0px); }
+.tile.tile-position-col-2-row-2{ -webkit-transform: translate(121px, 121px); }
+.tile.tile-position-col-2-row-3{ -webkit-transform: translate(121px, 242px); }
+.tile.tile-position-col-2-row-4{ -webkit-transform: translate(121px, 363px); }
+.tile.tile-position-col-3-row-1{ -webkit-transform: translate(242px, 0px); }
+.tile.tile-position-col-3-row-2{ -webkit-transform: translate(242px, 121px); }
+.tile.tile-position-col-3-row-3{ -webkit-transform: translate(242px, 242px); }
+.tile.tile-position-col-3-row-4{ -webkit-transform: translate(242px, 363px); }
+.tile.tile-position-col-4-row-1{ -webkit-transform: translate(363px, 0px); }
+.tile.tile-position-col-4-row-2{ -webkit-transform: translate(363px, 121px); }
+.tile.tile-position-col-4-row-3{ -webkit-transform: translate(363px, 242px); }
+.tile.tile-position-col-4-row-4{ -webkit-transform: translate(363px, 363px); }

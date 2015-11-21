@@ -1,7 +1,9 @@
 package webapp
 
+import java.util.Date
+
 import game2048.Board.GameStatesAfterMove._
-import game2048.Board.{Direction, Directions, Index}
+import game2048.Board.{AdditionalScore, Direction, Directions, Index}
 import game2048.Tiles.NonEmptyTile
 import game2048.{Board, Tile, Tiles}
 import japgolly.scalajs.react._
@@ -20,14 +22,18 @@ object Game2048Webapp extends JSApp {
     val newClass = "new"
   }
 
-  case class BoardBackend($: BackendScope[Unit, (Board.AdditionalScore, Board)]) {
+  case class GameBoardState(board: Board, additionalScore: AdditionalScore, newGame: Boolean = false, isGameOver: Boolean = false)
+
+  case class BoardBackend($: BackendScope[Unit, GameBoardState]) {
     def registerMoveBoardEventHandler() = Callback {
       dom.window.onkeydown = (e: KeyboardEvent) => onKeyDownHandler(e).runNow()
     }
 
     private def onKeyDownHandler(e: KeyboardEvent): Callback = {
       readDirection(e).map { dir =>
-        $.modState { case (score, board) => moveBoard(dir, board) }
+        $.modState { boardState =>
+          moveBoard(dir, boardState.board)
+        }
       }.getOrElse(Callback.empty)
     }
 
@@ -39,18 +45,23 @@ object Game2048Webapp extends JSApp {
       case _                            => None
     }
 
-    private def moveBoard(dir: Direction, board: Board): (Board.AdditionalScore, Board) = board.moveAndCreateNewTile(dir) match {
-      case BoardChanged(additionalScore, changedBoard) => (additionalScore, changedBoard.run.unsafePerformIO())
-      case NothingChanged                              => (0,               board)
+    private def moveBoard(dir: Direction, board: Board): GameBoardState = board.moveAndCreateNewTile(dir) match {
+      case BoardChanged(additionalScore, changedBoard) => GameBoardState(changedBoard.run.unsafePerformIO(), additionalScore)
+      case NothingChanged                              => GameBoardState(board, 0)
+      case GameOver(additionalScore, lastBoardState)   => GameBoardState(lastBoardState, additionalScore, isGameOver = true)
     }
 
     val gridContainer = (1 to Board.rows).map { _ => <.span((1 to Board.cols).map { _ => <.div(^.className := "grid-cell")}) }
-    def render(additionalScoreAndBoard: (Board.AdditionalScore, Board)) = {
-      val (additionalScore, board) = additionalScoreAndBoard
-      val boardTemplate = createBoardTemplate(board)
-      <.div(
-        scoreBoard(additionalScore),
+
+    def render(boardState: GameBoardState) = {
+      val boardTemplate = createBoardTemplate(boardState.board)
+      val boardKey = if (boardState.newGame) Some(^.key := new Date().getTime) else None
+      val gameOverMessage = if (boardState.isGameOver) List(<.div(^.className := "game-message game-over", <.p("Game over!"))) else Nil
+      <.div(boardKey,
+        scoreBoard(boardState.additionalScore),
+        <.div(<.a(^.className := "restart-button", "New Game"), ^.onClick --> restartBoard),
         <.div(^.className := "board",
+          gameOverMessage,
           <.div(^.className := "grid-container", gridContainer),
           <.div(^.className := "tile-container", boardTemplate)
         )
@@ -65,7 +76,7 @@ object Game2048Webapp extends JSApp {
     }.flatten
 
     private def createTile(tile: Tile, rowIndex: Index, colIndex: Index): Option[ReactTagOf[dom.Element]] = {
-      val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-row-$rowIndex-col-$colIndex", ^.key := s"${tile.id}")
+      val baseTileParams = List(^.className := s"tile tile-${tile.value} tile-position-col-$colIndex-row-$rowIndex", ^.key := s"${tile.id}")
       val tileInner = <.div(^.className := "tile-inner", tile.value)
       tile match {
         case f: NonEmptyTile if f.isNew     => Option(<.div(baseTileParams, ^.className := CssClasses.newClass, tileInner))
@@ -74,6 +85,8 @@ object Game2048Webapp extends JSApp {
         case Tiles.EmptyTile                => None
       }
     }
+
+    private def restartBoard() = $.setState($.getInitialState(()).copy(newGame = true))
 
     def removeMergeAndNewClasses() = Callback {
       org.scalajs.dom.setTimeout(() => {
@@ -89,7 +102,7 @@ object Game2048Webapp extends JSApp {
   }
 
   val GameBoard = ReactComponentB[Unit]("GameBoard")
-    .initialState((0, Board.createBoardStartPosition.run.unsafePerformIO()))
+    .initialState(GameBoardState(Board.createBoardStartPosition.run.unsafePerformIO(), 0))
     .renderBackend[BoardBackend]
     .componentDidMount(_.backend.registerMoveBoardEventHandler())
     .componentDidUpdate(_.$.backend.removeMergeAndNewClasses())
@@ -97,11 +110,9 @@ object Game2048Webapp extends JSApp {
 
   type Score = Int
   case class ScoreBackend($: BackendScope[Board.AdditionalScore, Score]) {
-    private var c: Long = 0
-    private def increment() = { c += 1; c }
     def render(additionalScore: Board.AdditionalScore) = {
       val currentScore = $.state.runNow()
-      val scoreContainer = <.div(^.className := "score-container", ^.key := increment(), s"SCORE: $currentScore") /*fixme this key incrementing thing is really lame, but without it score just does not re-render...*/
+      val scoreContainer = <.div(^.className := "score-container", ^.key := new Date().getTime, s"SCORE: $currentScore") /*fixme component recreating by timestamp as key is lame*/
       if (additionalScore > 0) scoreContainer(<.div(^.className := "score-addition", s"+$additionalScore"))
       else                     scoreContainer(<.div(^.className := "score-addition"))
     }

@@ -1,6 +1,7 @@
 package game2048
 
 import com.nicta.rng.Rng
+import game2048.Board.GameStatesAfterMove.GameOver
 import game2048.Board.{Index, AdditionalScore}
 import game2048.Tiles.{EmptyTile, NonEmptyTile}
 
@@ -27,7 +28,7 @@ object Board {
   object GameStatesAfterMove{
     case class BoardChanged(additionalScore: AdditionalScore, board: Rng[Board]) extends GameStateAfterMove
     case object NothingChanged extends GameStateAfterMove
-    /*fixme case object GameOver*/
+    case class GameOver(additionalScore: AdditionalScore, lastBoardState: Board) extends GameStateAfterMove
   }
 
   def createBoardStartPosition: Rng[Board] = Board.zero.nextBoard.flatMap(_.nextBoard)
@@ -35,6 +36,8 @@ object Board {
 
 case class Board(rows: List[Row]) {
   import Board._
+
+  override def toString() = { "\n" + rows.map(_.tiles).mkString("\n") }
 
   def nextBoard: Rng[Board] = {
     val newTileValueRng = Rng.chooseint(0, 10).map { n => if (n > 2) 2 else 4 }
@@ -47,8 +50,20 @@ case class Board(rows: List[Row]) {
 
   def moveAndCreateNewTile(d: Direction): GameStateAfterMove = {
     val (additionalScore, boardAfterMove) = move(d)
-    if (boardAfterMove == this) GameStatesAfterMove.NothingChanged
-    else                        GameStatesAfterMove.BoardChanged(additionalScore, boardAfterMove.nextBoard)
+    val gameStateAfterMove = if (boardAfterMove == this) {
+      GameStatesAfterMove.NothingChanged
+    } else {
+      GameStatesAfterMove.BoardChanged(additionalScore, boardAfterMove.nextBoard)
+    }
+    if (nextMoveIsPossible) gameStateAfterMove
+    else GameOver(additionalScore, boardAfterMove)
+  }
+
+  private def nextMoveIsPossible: Boolean = {
+    List(Directions.Left, Directions.Right, Directions.Up, Directions.Down).exists { dir =>
+      val (_, boardAfterMove) = move(dir)
+      boardAfterMove != this
+    }
   }
 
   def move(d: Direction): (AdditionalScore, Board) = d match {
@@ -60,11 +75,8 @@ case class Board(rows: List[Row]) {
   }
 
   private def emptyTileIndices: Rng[(Index, Index)] = {
-    val nel = allEmptyIndices match {
-      case h :: t => NonEmptyList.nel(h, t)
-      case _ => throw new RuntimeException("you lost")
-    }
-    Rng.oneofL(nel)
+    val indices = allEmptyIndices
+    Rng.oneofL(NonEmptyList.nel(indices.head, indices.tail))
   }
 
   private def allEmptyIndices: List[(Index, Index)] = for {
@@ -111,7 +123,7 @@ sealed trait Tile {
 object Tiles {
   var counter: Long = 0 /*shame on me*/
   def incrAndGetCounter = {
-    counter += 1 
+    counter += 1
     counter
   }
 

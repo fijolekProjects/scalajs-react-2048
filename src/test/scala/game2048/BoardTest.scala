@@ -1,6 +1,7 @@
 package game2048
 
-import game2048.Board.Directions
+import com.nicta.rng.Rng
+import game2048.Board.{Directions, GameStatesAfterMove}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -56,14 +57,24 @@ class BoardTest extends FlatSpec with Matchers with TableDrivenPropertyChecks{
       Row(List(0, 0, 2, 0))
     )
 
-    val anoptherRowsAfterUpMove = List(
+    val anotherRowsAfterUpMove = List(
       Row(List(0, 0, 4, 0)),
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 0)),
       Row(List(0, 0, 0, 0))
     )
 
-    Board(anotherRowsBeforeMove).move(Directions.Up)._2 shouldBe Board(anoptherRowsAfterUpMove)
+    Board(anotherRowsBeforeMove).move(Directions.Up)._2 shouldBe Board(anotherRowsAfterUpMove)
   }
 
+  it should "determine if game is over" in {
+    val rows = List(
+      Row(List(4, 2, 8, 4)),
+      Row(List(2, 4, 2, 8)),
+      Row(List(4, 2, 8, 4)),
+      Row(List(8, 4, 2, 8))
+    )
+
+    Board(rows).moveAndCreateNewTile(Directions.Left) shouldBe GameStatesAfterMove.GameOver(0, Board(rows))
+  }
 }
