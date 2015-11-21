@@ -1,7 +1,7 @@
 package game2048
 
 import com.nicta.rng.Rng
-import game2048.Board.GameStatesAfterMove.GameOver
+import game2048.Board.GameStatesAfterMove.{UserWon, GameOver}
 import game2048.Board.{Index, AdditionalScore}
 import game2048.Tiles.{EmptyTile, NonEmptyTile}
 
@@ -14,6 +14,7 @@ object Board {
   val rows = 4
   val cols = 4
   private val zero = Board((1 to rows).toList.map(_ => Row(List.fill(cols)(EmptyTile))))
+  val lastTileValue = 2048
 
   sealed trait Direction
   object Directions {
@@ -29,6 +30,7 @@ object Board {
     case class BoardChanged(additionalScore: AdditionalScore, board: Rng[Board]) extends GameStateAfterMove
     case object NothingChanged extends GameStateAfterMove
     case class GameOver(additionalScore: AdditionalScore, lastBoardState: Board) extends GameStateAfterMove
+    case class UserWon(additionalScore: AdditionalScore, lastBoardState: Board) extends GameStateAfterMove
   }
 
   def createBoardStartPosition: Rng[Board] = Board.zero.nextBoard.flatMap(_.nextBoard)
@@ -55,9 +57,12 @@ case class Board(rows: List[Row]) {
     } else {
       GameStatesAfterMove.BoardChanged(additionalScore, boardAfterMove.nextBoard)
     }
-    if (nextMoveIsPossible) gameStateAfterMove
+    if (boardAfterMove.isCompleted) UserWon(additionalScore, boardAfterMove)
+    else if (nextMoveIsPossible) gameStateAfterMove /*fixme this is kind of a bug, there should be smth like if (boardAfterMove.nextBoard.nextMoveIsPossible)*/
     else GameOver(additionalScore, boardAfterMove)
   }
+
+  private def isCompleted: Boolean = this.rows.flatMap(_.tiles).exists(_.value == lastTileValue)
 
   private def nextMoveIsPossible: Boolean = {
     List(Directions.Left, Directions.Right, Directions.Up, Directions.Down).exists { dir =>

@@ -22,7 +22,7 @@ object Game2048Webapp extends JSApp {
     val newClass = "new"
   }
 
-  case class GameBoardState(board: Board, additionalScore: AdditionalScore, newGame: Boolean = false, isGameOver: Boolean = false)
+  case class GameBoardState(board: Board, additionalScore: AdditionalScore, newGame: Boolean = false, isGameOver: Boolean = false, userWon: Boolean = false)
 
   case class BoardBackend($: BackendScope[Unit, GameBoardState]) {
     def registerMoveBoardEventHandler() = Callback {
@@ -32,7 +32,8 @@ object Game2048Webapp extends JSApp {
     private def onKeyDownHandler(e: KeyboardEvent): Callback = {
       readDirection(e).map { dir =>
         $.modState { boardState =>
-          moveBoard(dir, boardState.board)
+          if (boardState.isGameOver || boardState.userWon) boardState.copy(additionalScore = 0)
+          else moveBoard(dir, boardState.board)
         }
       }.getOrElse(Callback.empty)
     }
@@ -49,6 +50,7 @@ object Game2048Webapp extends JSApp {
       case BoardChanged(additionalScore, changedBoard) => GameBoardState(changedBoard.run.unsafePerformIO(), additionalScore)
       case NothingChanged                              => GameBoardState(board, 0)
       case GameOver(additionalScore, lastBoardState)   => GameBoardState(lastBoardState, additionalScore, isGameOver = true)
+      case UserWon(additionalScore, lastBoardState)    => GameBoardState(lastBoardState, additionalScore, userWon = true)
     }
 
     val gridContainer = (1 to Board.rows).map { _ => <.span((1 to Board.cols).map { _ => <.div(^.className := "grid-cell")}) }
@@ -57,11 +59,15 @@ object Game2048Webapp extends JSApp {
       val boardTemplate = createBoardTemplate(boardState.board)
       val boardKey = if (boardState.newGame) Some(^.key := new Date().getTime) else None
       val gameOverMessage = if (boardState.isGameOver) List(<.div(^.className := "game-message game-over", <.p("Game over!"))) else Nil
-      <.div(boardKey,
+      val gameWonMessage = if (boardState.userWon) List(<.div(^.className := "game-message game-won", <.p("You win!"))) else Nil
+      <.div(
+        <.h1(2048),
+        boardKey,
         scoreBoard(boardState.additionalScore),
         <.div(<.a(^.className := "restart-button", "New Game"), ^.onClick --> restartBoard),
         <.div(^.className := "board",
           gameOverMessage,
+          gameWonMessage,
           <.div(^.className := "grid-container", gridContainer),
           <.div(^.className := "tile-container", boardTemplate)
         )
@@ -112,7 +118,7 @@ object Game2048Webapp extends JSApp {
   case class ScoreBackend($: BackendScope[Board.AdditionalScore, Score]) {
     def render(additionalScore: Board.AdditionalScore) = {
       val currentScore = $.state.runNow()
-      val scoreContainer = <.div(^.className := "score-container", ^.key := new Date().getTime, s"SCORE: $currentScore") /*fixme component recreating by timestamp as key is lame*/
+      val scoreContainer = <.div(^.className := "score-container", ^.key := new Date().getTime, s"$currentScore")
       if (additionalScore > 0) scoreContainer(<.div(^.className := "score-addition", s"+$additionalScore"))
       else                     scoreContainer(<.div(^.className := "score-addition"))
     }

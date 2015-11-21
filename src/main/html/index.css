@@ -3,6 +3,13 @@ body {
     font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
     background: #faf8ef;
 }
+h1 {
+    font-size: 80px;
+    font-weight: bold;
+    margin: 0;
+    display: block;
+    float: left;
+}
 .container {
     margin: 0 auto;
     width: 500px;
@@ -10,16 +17,30 @@ body {
 }
 
 .score-container {
+    position: relative;
     display: inline-block;
     background: #bbada0;
     padding: 15px 25px;
     font-size: 25px;
-    height: 22px;
+    height: 25px;
+    line-height: 47px;
     font-weight: bold;
     border-radius: 3px;
     color: white;
+    margin-top: 8px;
+    margin-left: 200px;
     text-align: center;
-    margin-bottom: 25px;
+}
+.score-container:after {
+    position: absolute;
+    width: 100%;
+    top: 10px;
+    left: 0;
+    text-transform: uppercase;
+    font-size: 13px;
+    line-height: 13px;
+    text-align: center;
+    color: #eee4da;
 }
 
 @-webkit-keyframes move-up {
@@ -29,7 +50,7 @@ body {
 
 .score-container .score-addition {
     position: absolute;
-    margin-left: 100px;
+    right: 30px;
     font-size: 25px;
     line-height: 25px;
     font-weight: bold;
@@ -39,6 +60,9 @@ body {
     -webkit-animation-fill-mode: both;
 }
 
+.score-container:after {
+    content: "Score"; }
+
 .board {
     width: 500px;
     height: 500px;
@@ -46,6 +70,7 @@ body {
     background: #bbada0;
     padding: 15px;
     border-radius: 6px;
+    margin-top: 70px;
     -webkit-box-sizing: border-box;
 }
 
@@ -80,8 +105,9 @@ body {
     line-height: 42px;
     cursor: pointer;
     text-align: center;
+    font-weight: bold;
     float: right;
-    margin-top: -70px;
+    margin-top: 20px;
 }
 
 .game-message.game-over {
@@ -94,6 +120,12 @@ body {
     height: 60px;
     line-height: 60px;
     margin-top: 20%;
+}
+
+.game-message.game-won {
+    background: rgba(237, 194, 46, 0.5);
+    color: #f9f6f2;
+    display: block;
 }
 
 .grid-container {
@@ -194,3 +226,21 @@ body {
 .tile.tile-position-col-4-row-2{ -webkit-transform: translate(363px, 121px); }
 .tile.tile-position-col-4-row-3{ -webkit-transform: translate(363px, 242px); }
 .tile.tile-position-col-4-row-4{ -webkit-transform: translate(363px, 363px); }
+
+.game-explanation {
+    margin-top: 50px; }
+p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    line-height: 1.65; }
+a {
+    color: #776e65;
+    font-weight: bold;
+    text-decoration: underline;
+    cursor: pointer; }
+
+hr {
+    border: none;
+    border-bottom: 1px solid #d8d4d0;
+    margin-top: 20px;
+    margin-bottom: 30px; }
