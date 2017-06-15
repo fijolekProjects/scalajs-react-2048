@@ -5,7 +5,7 @@ Demo: http://fijolekprojects.github.io/scalajs-react-2048/
 
 ### How it looks
 
-![Game sample] (http://i.imgur.com/9hCKLeA.png)
+![Game sample](http://i.imgur.com/9hCKLeA.png)
 
 ### How it works
 ##### Backend
